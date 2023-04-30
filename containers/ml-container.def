@@ -1,0 +1,14 @@
+Bootstrap: docker
+From: python
+
+%files
+requirements.txt /usr/local/src/requirements.txt
+trainer.py /usr/local/src/trainer.py
+test.csv /usr/local/src/test.csv
+
+%post
+pip install -r /usr/local/src/requirements.txt
+
+%startscript
+cd /usr/local/src/
+uvicorn trainer:app --reload --host 0.0.0.0 --port 8000

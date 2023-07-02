@@ -2,6 +2,7 @@
 from models import Token, User
 from app import create_app
 from auth import authenticate_user, get_user_from_token, create_access_token
+from utils import stop_and_clean, start_container, stop_container
 
 # Pip Imports
 import requests
@@ -13,6 +14,32 @@ import subprocess
 import time
 from typing import Annotated
 from datetime import timedelta
+
+# Constants
+FILE_DIR = "/var/run/ml-containers/"
+
+# Intialize port reservations list
+if not stop_and_clean():
+    print("Something went wrong trying to clean up the environment...")
+    exit(1)
+port_directories = { k:True for k in range(20000, 20020) }
+
+# Helper functions
+def get_available_port():
+    for port, avail in port_directories.items():
+        if avail:
+            port_directories[port] = False
+            return port
+    return None
+
+def release_port(port):
+    port_directories[port] = True
+    cmd = ["systemctl", "stop", f"ml-container@{port}"]
+    p = subprocess.run(cmd)
+    if p.returncode != 0:
+        print(f"Unable to stop ml-container@{port} service: {p.stderr}")
+        return False
+    return True
 
 # Intitialize application
 app = create_app()
@@ -35,8 +62,18 @@ async def login_for_access_token(
 
 @app.post("/train")
 def upload(current_user: Annotated[User, Depends(get_user_from_token)], file: UploadFile = File()):
+    port = get_available_port()
     try:
-        with open(file.filename, 'wb') as f:
+        if not port:
+            return {"message": "Error reserving port"}
+
+        port = str(port)
+        started = start_container(port)
+        if not started:
+            return {"message": "Error starting container"}
+
+        file_path = f"{FILE_DIR}/{port}/{file.filename}"
+        with open(file_path, 'wb') as f:
             while contents := file.file.read(1024 * 1024):
                 f.write(contents)
     except Exception:
@@ -44,20 +81,11 @@ def upload(current_user: Annotated[User, Depends(get_user_from_token)], file: Up
     finally:
         file.file.close()
 
-    sensitivity = current_user.sensitivity
-    category = current_user.category
+    return {"message": "Started container"}
+    #sensitivity = current_user.sensitivity
+    #category = current_user.category
 
-    args = [ "/bin/systemctl", "start", "ml-container@20000" ]
-    p = subprocess.run(args)
-    print(f"Start output: {p.stdout}, Start Errors: {p.stderr}")
-
-    time.sleep(5) # Give container a moment to spin up
-
-    url = "http://localhost:20000/train"
-    response = requests.get(url=url)
+    #url = "http://localhost:20000/train"
+    #response = requests.get(url=url)
     
-    args = ["/bin/systemctl", "stop", "ml-container@20000" ]
-    p = subprocess.run(args)
-    print(f"Stop output: {p.stdout}, Stop Errors: {p.stderr}")
-
-    return response.json()
+    #return response.json()

@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=forking
-ExecStart=/usr/local/selinux-machine-learning/containers/start.sh %i
-ExecStop=/usr/local/selinux-machine-learning/containers/stop.sh %i
+ExecStart=/home/mlserver/selinux-machine-learning/containers/start.sh %i
+ExecStop=/home/mlserver/selinux-machine-learning/containers/stop.sh %i
 RuntimeDirectory=ml-containers/%i
 PIDFile=/run/ml-containers/%i/pid
 TimeoutStopSec=10

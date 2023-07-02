@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dir=/usr/local/selinux-machine-learning/containers/
+dir=/home/mlserver/selinux-machine-learning/containers/
 port=$1
 
 apptainer instance start \

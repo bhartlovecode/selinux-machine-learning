@@ -33,7 +33,7 @@ async def login_for_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/train")
+@app.post("/train")
 async def start_container(current_user: Annotated[User, Depends(get_user_from_token)]):
     sensitivity = current_user.sensitivity
     category = current_user.category

@@ -7,6 +7,15 @@ import os
 URL = "http://127.0.0.1:8000"
 jwt_file_path = os.path.expanduser('~') + '/.mlclient-jwt.txt'
 
+def read_jwt_token():
+    if os.path.exists(jwt_file_path) and os.path.isfile(jwt_file_path):
+        jwt_token = None
+        with open(jwt_file_path, 'r') as f:
+            jwt_token = f.readline()
+            return jwt_token
+    print("No access token found! Please use the 'login' subcommand before making any requests.")
+    return None
+
 def login_user(username, password):
     request_url = URL + "/token"
 
@@ -19,8 +28,15 @@ def login_user(username, password):
     return response
 
 def train_model(model, filename):
-    print(f"Attemping to train {model} on {filename}")
-    return None
+    jwt_token = read_jwt_token()
+    if not jwt_token:
+        exit(1)
+    header_token = "Bearer " + jwt_token 
+    headers = {"Authorization": header_token}
+    
+    request_url = URL + "/train"
+    response = requests.post(url=request_url, headers=headers)
+    return response
 
 # Define our parser
 parser = argparse.ArgumentParser(prog='MLClient')
@@ -53,10 +69,7 @@ if args.command == 'login':
     with open(jwt_file_path, 'w') as f:
         f.write(token)
 elif args.command == 'train':
-    if not os.path.exists(jwt_file_path):
-        print("No access token found! Please use the 'login' subcommand before making any requests.")
-        exit(1)
-    train_model(args.model[0], args.filename[0])
+    response = train_model(args.model[0], args.filename[0])
 else:
     print("No command specified.")
     exit(1)

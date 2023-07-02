@@ -34,8 +34,9 @@ def train_model(model, filename):
     header_token = "Bearer " + jwt_token 
     headers = {"Authorization": header_token}
     
+    file = {'file': open('test.csv', 'rb')}
     request_url = URL + "/train"
-    response = requests.post(url=request_url, headers=headers)
+    response = requests.post(url=request_url, files=file, headers=headers)
     return response
 
 # Define our parser
@@ -70,6 +71,7 @@ if args.command == 'login':
         f.write(token)
 elif args.command == 'train':
     response = train_model(args.model[0], args.filename[0])
+    print(response.json())
 else:
     print("No command specified.")
     exit(1)

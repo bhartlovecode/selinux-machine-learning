@@ -5,7 +5,7 @@ from auth import authenticate_user, get_user_from_token, create_access_token
 
 # Pip Imports
 import requests
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 
 # Standard Library Imports
@@ -34,21 +34,30 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/train")
-async def start_container(current_user: Annotated[User, Depends(get_user_from_token)]):
+def upload(current_user: Annotated[User, Depends(get_user_from_token)], file: UploadFile = File()):
+    try:
+        with open(file.filename, 'wb') as f:
+            while contents := file.file.read(1024 * 1024):
+                f.write(contents)
+    except Exception:
+        return {"message": f"There was an error uploading the file: {file.filename}"}
+    finally:
+        file.file.close()
+
     sensitivity = current_user.sensitivity
     category = current_user.category
-    return f"Training at context: user_u:user_r:{sensitivity}:{category}"
-    # args = [ "/bin/systemctl", "start", "ml-container@20000" ]
-    # p = subprocess.run(args)
-    # print(f"Start output: {p.stdout}, Start Errors: {p.stderr}")
 
-    # time.sleep(5) # Give container a moment to spin up
+    args = [ "/bin/systemctl", "start", "ml-container@20000" ]
+    p = subprocess.run(args)
+    print(f"Start output: {p.stdout}, Start Errors: {p.stderr}")
 
-    # url = "http://localhost:20000/train"
-    # response = requests.get(url=url)
+    time.sleep(5) # Give container a moment to spin up
+
+    url = "http://localhost:20000/train"
+    response = requests.get(url=url)
     
-    # args = ["/bin/systemctl", "stop", "ml-container@20000" ]
-    # p = subprocess.run(args)
-    # print(f"Stop output: {p.stdout}, Stop Errors: {p.stderr}")
+    args = ["/bin/systemctl", "stop", "ml-container@20000" ]
+    p = subprocess.run(args)
+    print(f"Stop output: {p.stdout}, Stop Errors: {p.stderr}")
 
-    # return response.json()
+    return response.json()

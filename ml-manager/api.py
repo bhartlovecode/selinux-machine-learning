@@ -19,7 +19,8 @@ from datetime import timedelta
 FILE_DIR = "/var/run/ml-containers/"
 
 # Intialize port reservations list
-if not stop_and_clean():
+cleaned_up = stop_and_clean()
+if not cleaned_up:
     print("Something went wrong trying to clean up the environment...")
     exit(1)
 port_directories = { k:True for k in range(20000, 20020) }
